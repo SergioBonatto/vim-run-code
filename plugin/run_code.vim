@@ -235,8 +235,6 @@ function! s:RunCodeAlternative()
         let l:cmd .= ' && time fmjs %:r --run'
     elseif l:ft == 'kind2'
         let l:cmd .= ' && time kind2 normal %'
-    elseif l:ft == 'kindelia'
-        let l:cmd .= ' && time kindelia post % 127.0.0.1:42000'
     elseif l:ft == 'lambolt'
         let l:cmd .= ' && time lam % c'
     elseif l:ft == 'bend'
