@@ -5,7 +5,7 @@ let g:loaded_run_code = 1
 
 function! s:RunCode()
     write
-    let l:cmd = 'clear && date'
+    let l:cmd = 'clear'
     let l:ft = &filetype
 
     if has_key(g:run_code_commands, l:ft)
@@ -13,7 +13,7 @@ function! s:RunCode()
     elseif l:ft == 'agda'
         let l:cmd .= ' && agda -i src %'
     elseif l:ft == 'bend'
-        let l:cmd .= ' && time bend check %'
+        let l:cmd .= ' && time bend check % && echo "all terms checked"'
     elseif l:ft == 'caramel'
         let l:cmd .= ' && time mel main'
     elseif l:ft == 'c'
@@ -228,13 +228,11 @@ function! s:RunCodeAlternative()
     elseif l:ft == 'typescript'
         let l:cmd .= ' && time deno --unstable run --reload --allow-all %'
     elseif l:ft == 'html'
-        let l:cmd .= ' && npm run build'
+        let l:cmd .= ' && http-server -c-1'
     elseif l:ft == 'eatt'
         let l:cmd .= ' && time eatt %:r'
     elseif l:ft == 'fmfm' || l:ft == 'formality'
         let l:cmd .= ' && time fmjs %:r --run'
-    elseif l:ft == 'kind'
-        let l:cmd .= ' && time kind ' . substitute(expand("%:r"),"/",".","g") . ' --run'
     elseif l:ft == 'kind2'
         let l:cmd .= ' && time kind2 normal %'
     elseif l:ft == 'kindelia'
