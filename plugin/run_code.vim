@@ -11,7 +11,7 @@ function! s:RunCode()
     if has_key(g:run_code_commands, l:ft)
         let l:cmd .= ' && ' . g:run_code_commands[l:ft]
     elseif l:ft == 'agda'
-        let l:cmd .= ' && agda -i src %'
+        let l:cmd .= ' && agda-cli check %'
     elseif l:ft == 'bend'
         let l:cmd .= ' && time bend check % && echo "all terms checked"'
     elseif l:ft == 'caramel'
@@ -60,8 +60,8 @@ function! s:RunCode()
         let l:cmd .= ' && time node %'
     elseif l:ft == 'kind2'
         let l:cmd .= ' && time kind2 check %'
-    elseif l:ft == 'kindc'
-        let l:cmd .= ' && time kindc check %'
+    elseif l:ft == 'kind'
+        let l:cmd .= ' && time kind check %'
     elseif l:ft == 'ksc'
         let l:cmd .= ' && time kindelia-cli local eval --file %'
     elseif l:ft == 'lambda'
@@ -111,95 +111,14 @@ function! s:RunCode()
     execute '!' . l:cmd
 endfunction
 
-function! s:RunCodeLeaderAlternative()
-    write
-    let l:cmd = 'clear && date'
-    let l:ft = &filetype
-
-    if expand('%:p') == '/Users/v/mist/main.js'
-        let l:cmd .= ' && electron . --rpc ~/Library/Ethereum/testnet/geth.ipc'
-    elseif expand('%:t') == 'test.js'
-        let l:cmd .= ' && mocha'
-    elseif l:ft == 'caramel'
-        let l:cmd .= ' && time mel main'
-    elseif l:ft == 'ocaml'
-        let l:cmd .= ' && ocamlc -o %:r % && ./%:r'
-    elseif l:ft == 'factor'
-        let l:cmd .= ' && ~/factor/factor %'
-    elseif l:ft == 'python'
-        let l:cmd .= ' && time python %'
-    elseif l:ft == 'coc'
-        let l:cmd .= ' && time (coc type %:r; coc norm %:r)'
-    elseif l:ft == 'scheme'
-        let l:cmd .= ' && csc % && time ./%:r'
-    elseif l:ft == 'elm'
-        let l:cmd .= ' && elm % -r elm-runtime.js && osascript ~/.vim/refresh.applescript &'
-    elseif l:ft == 'racket'
-        let l:cmd .= ' && racket %'
-    elseif l:ft == 'haskell'
-        let l:cmd .= ' && stack run'
-    elseif l:ft == 'rust'
-        let l:cmd .= ' && time cargo +nightly run --release'
-    elseif l:ft == 'go'
-        let l:cmd .= ' && time go run %'
-    elseif l:ft == 'purescript'
-        let l:cmd .= ' && pulp run'
-    elseif l:ft == 'dvl'
-        let l:cmd .= ' && dvl run %'
-    elseif l:ft == 'lambda'
-        let l:cmd .= ' && time absal -s %'
-    elseif l:ft == 'javascript' || l:ft == 'typescript' || l:ft == 'html'
-        let l:cmd .= ' && node %'
-    elseif l:ft == 'eatt'
-        let l:cmd .= ' && time eatt %:r'
-    elseif l:ft == 'formality'
-        let l:cmd .= ' && time fmio %:r'
-    elseif l:ft == 'formcore'
-        let l:cmd .= ' && time fmcrun main'
-    elseif l:ft == 'ksc'
-        let l:cmd .= ' && time kic %'
-    elseif l:ft == 'kind2'
-        let l:cmd .= ' && time kind2 run %'
-    elseif l:ft == 'kindc'
-        let l:cmd .= ' && time kindc run %'
-    elseif l:ft == 'eac'
-        let l:cmd .= ' && time eac %:r'
-    elseif l:ft == 'moon'
-        let l:cmd .= ' && time moon run %:r'
-    elseif l:ft == 'sic'
-        let l:cmd .= ' && time sic -s -B %'
-    elseif l:ft == 'morte'
-        let l:cmd .= ' && time echo $(cat %) | morte'
-    elseif l:ft == 'swift'
-        let l:cmd .= ' && time swift %'
-    elseif l:ft == 'solidity'
-        let l:cmd .= ' && truffle deploy'
-    elseif l:ft == 'idris2'
-        let l:cmd .= ' && idris2 % -o %:r && time ./%:r'
-    elseif l:ft == 'c'
-        let l:cmd .= ' && clang -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'cuda'
-        let l:cmd .= ' && rm %:r; nvcc -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'cpp'
-        let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'agda'
-        let l:cmd .= ' && agda -i src %'
-    elseif l:ft == 'ls'
-        let l:cmd .= ' && lsc -c % && node %:r.js'
-    else
-        let l:cmd .= ' && time cc %'
-    endif
-
-    execute '!' . l:cmd
-endfunction
-"
-"
 function! s:RunCodeAlternative()
     write
     let l:cmd = 'clear && date'
     let l:ft = &filetype
 
-    if l:ft == 'caramel'
+    if l:ft == 'agda'
+        let l:cmd .= ' && agda-cli check %'
+    elseif l:ft == 'caramel'
         let l:cmd .= ' && time mel main'
     elseif l:ft == 'ocaml'
         let l:cmd .= ' && ocamlc -o %:r % && ./%:r'
@@ -229,6 +148,10 @@ function! s:RunCodeAlternative()
         let l:cmd .= ' && time absal -s %'
     elseif l:ft == 'javascript'
         let l:cmd .= ' && node %'
+    elseif l:ft == 'icvm'
+        let l:cmd .= ' && time ic % '
+    elseif l:ft == 'ic'
+        let l:cmd .= ' && time ic %'
     elseif l:ft == 'typescript'
         let l:cmd .= ' && time deno --unstable run --reload --allow-all %'
     elseif l:ft == 'html'
@@ -239,8 +162,10 @@ function! s:RunCodeAlternative()
         let l:cmd .= ' && time fmjs %:r --run'
     elseif l:ft == 'kind2'
         let l:cmd .= ' && time kind2 normal %'
-    elseif l:ft == 'kindc'
-        let l:cmd .= ' && time kindc check %'
+        elseif &filetype == 'kind'
+            let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+            let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
+            let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind check ' . shellescape(l:relative_path)
     elseif l:ft == 'lambolt'
         let l:cmd .= ' && time lam % c'
     elseif l:ft == 'bend'
@@ -276,22 +201,9 @@ function! s:RunCodeAlternative()
     elseif l:ft == 'cpp'
         let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
     elseif l:ft == 'agda'
-        let l:cmd .= ' && agda -i src %'
+        let l:cmd .= ' && agda-cli run %'
     elseif l:ft == 'ls'
         let l:cmd .= ' && lsc -c % && node %:r.js'
-     elseif l:ft == 'bend'
-        let l:cmd .= ' && time bend run-c % -s'
-    elseif l:ft == 'hvm2'
-        let l:cmd .= ' && hvm c %; clang -O2 %:r.c -o %:r; time ./%:r 2; rm %:r %:r.c'
-    elseif l:ft == 'hvm-lang'
-        let l:cmd .= ' && time hvm-lang run %'
-    elseif l:ft == 'hvm'
-        let l:cmd .= ' && time hvm run %'
-    elseif l:ft == 'icvm' || l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif l:ft == 'ksc'
-        let l:cmd .= ' && time kindelia-cli local check --file %'
-
     else
         let l:cmd .= ' && time cc %'
     endif
@@ -308,6 +220,7 @@ endfunction
 if get(g:, 'run_code_map_keys', 1)
     nnoremap <silent> R :call RunCodeAlternative()<CR>
 endif
+
 function! s:RunCodeLeader()
     write
     let l:cmd = 'clear && date'
@@ -327,6 +240,12 @@ function! s:RunCodeLeader()
         let l:cmd .= ' && clang -O3 -Wall % -o %:r && time ./%:r'
     elseif &filetype == 'cpp'
         let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
+    elseif &filetype == 'agda'
+        let l:cmd .= ' && agda-cli run %'
+        elseif &filetype == 'kind'
+            let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+            let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
+            let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind run ' . shellescape(l:relative_path)
     else
         let l:cmd .= ' && time cc %'
     endif
@@ -352,6 +271,10 @@ function! s:RunCodeLeaderAlternative()
         let l:cmd .= ' && clang -O3 % -o %:r && time ./%:r'
     elseif &filetype == 'cpp'
         let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
+    elseif &filetype == 'agda'
+        let l:cmd .= ' && agda-cli run %'
+    elseif &filetype == 'kind'
+        let l:cmd .= ' && time kind run %'
     else
         let l:cmd .= ' && time cc %'
     endif
@@ -362,7 +285,7 @@ function! SetRunCommand(filetype, command)
     let g:run_code_commands[a:filetype] = a:command
 endfunction
 
-nnoremap <silent> r :call <SID>RunCode()<CR>
-nnoremap <silent> R :call <SID>RunCodeAlternative()<CR>
-nnoremap <silent> <leader>r :call <SID>RunCodeLeader()<CR>
+nnoremap <silent> r :call <SID>RunCodeAlternative()<CR>
+nnoremap <silent> R :call <SID>RunCodeLeader()<CR>
+nnoremap <silent> <leader>r :call <SID>RunCodeAlternative()<CR>
 nnoremap <silent> <leader>R :call <SID>RunCodeLeaderAlternative()<CR>
