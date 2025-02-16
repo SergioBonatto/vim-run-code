@@ -36,6 +36,8 @@ function! s:RunCode()
         let l:cmd .= ' && clear && w! && elm % -r elm-runtime.js && osascript ~/.vim/refresh.applescript &'
     elseif l:ft == 'formality'
         let l:cmd .= ' && time fm %'
+    elseif l:ft == 'fibo'
+        let l:cmd .= ' && time fibo %'
     elseif l:ft == 'formcore'
         let l:cmd .= ' && time fmcjs %:r'
     elseif l:ft == 'go'
@@ -48,6 +50,10 @@ function! s:RunCode()
         let l:cmd .= ' && time hvm-lang  % '
     elseif l:ft == 'hvm'
         let l:cmd .= ' && time hvm run-c  %'
+    elseif l:ft == 'hvml'
+        let l:cmd .= ' && time hvml run % -s -c'
+    elseif l:ft == 'hvms'
+        let l:cmd .= ' && time hvms run %'
     elseif l:ft == 'icvm'
         let l:cmd .= ' && time ic % '
     elseif l:ft == 'ic'
@@ -78,6 +84,8 @@ function! s:RunCode()
         let l:cmd .= ' && ocamlc -o %:r % && ./%:r'
     elseif l:ft == 'perl'
         let l:cmd .= ' && perl %'
+    elseif l:ft == 'phi'
+        let l:cmd .= ' && time phi %'
     elseif l:ft == 'php'
         let l:cmd .= ' && php %'
     elseif l:ft == 'purescript'
@@ -125,7 +133,7 @@ function! s:RunCodeAlternative()
     elseif l:ft == 'factor'
         let l:cmd .= ' && ~/factor/factor %'
     elseif l:ft == 'python'
-        let l:cmd .= ' && time python %'
+        let l:cmd .= ' && time python3 %'
     elseif l:ft == 'coc'
         let l:cmd .= ' && time (coc type %:r; coc norm %:r)'
     elseif l:ft == 'scheme'
@@ -147,7 +155,7 @@ function! s:RunCodeAlternative()
     elseif l:ft == 'lambda'
         let l:cmd .= ' && time absal -s %'
     elseif l:ft == 'javascript'
-        let l:cmd .= ' && node %'
+        let l:cmd .= '&& time node %'
     elseif l:ft == 'icvm'
         let l:cmd .= ' && time ic % '
     elseif l:ft == 'ic'
@@ -156,16 +164,34 @@ function! s:RunCodeAlternative()
         let l:cmd .= ' && time deno --unstable run --reload --allow-all %'
     elseif l:ft == 'html'
         let l:cmd .= ' && http-server -c-1'
+    elseif l:ft == "hvml"
+        let l:cmd .= ' && time hvml run % -s -c'
     elseif l:ft == 'eatt'
         let l:cmd .= ' && time eatt %:r'
     elseif l:ft == 'fmfm' || l:ft == 'formality'
         let l:cmd .= ' && time fmjs %:r --run'
+    elseif l:ft == 'fibo'
+        let l:cmd .= ' && time fibo %'
+    elseif l:ft == 'phi'
+        let l:cmd .= ' && time phi % -s -c'
+    elseif &filetype == 'jsx'
+        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
+
+    elseif &filetype == 'tsx'
+        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
+
+    elseif &filetype == 'ts'
+        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
+
     elseif l:ft == 'kind2'
         let l:cmd .= ' && time kind2 normal %'
-        elseif &filetype == 'kind'
-            let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-            let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
-            let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind check ' . shellescape(l:relative_path)
+    elseif &filetype == 'kind'
+        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+        let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
+        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind check ' . shellescape(l:relative_path)
     elseif l:ft == 'lambolt'
         let l:cmd .= ' && time lam % c'
     elseif l:ft == 'bend'
@@ -176,7 +202,11 @@ function! s:RunCodeAlternative()
         let l:cmd .= ' && time hvm-lang run %'
     elseif l:ft == 'hvm'
         let l:cmd .= ' && time hvm run %'
+    elseif l:ft == 'hvml'
+        let l:cmd .= ' && time hvml run % -S -s -c'
     elseif l:ft == 'icvm' || l:ft == 'ic'
+        let l:cmd .= ' && time ic %'
+    elseif l:ft == 'ic'
         let l:cmd .= ' && time ic %'
     elseif l:ft == 'ksc'
         let l:cmd .= ' && time kindelia-cli local check --file %'
@@ -225,7 +255,7 @@ function! s:RunCodeLeader()
     write
     let l:cmd = 'clear && date'
     if &filetype == 'python'
-        let l:cmd .= ' && time python %'
+        let l:cmd .= ' && time python3 %'
     elseif &filetype == 'javascript'
         let l:cmd .= ' && npm run build'
     elseif &filetype == 'typescript'
@@ -238,14 +268,20 @@ function! s:RunCodeLeader()
         let l:cmd .= ' && stack run'
     elseif &filetype == 'c'
         let l:cmd .= ' && clang -O3 -Wall % -o %:r && time ./%:r'
+    elseif l:ft == 'fibo'
+        let l:cmd .= ' && time fibo %'
     elseif &filetype == 'cpp'
         let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
     elseif &filetype == 'agda'
         let l:cmd .= ' && agda-cli run %'
-        elseif &filetype == 'kind'
-            let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-            let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
-            let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind run ' . shellescape(l:relative_path)
+    elseif l:ft == 'ic'
+        let l:cmd .= ' && time ic %'
+    elseif &filetype == 'kind'
+        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
+        let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
+        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind run ' . shellescape(l:relative_path)
+    elseif l:ft == 'hvml'
+        let l:cmd .= ' && time hvml run % -s -c'
     else
         let l:cmd .= ' && time cc %'
     endif
@@ -256,15 +292,17 @@ function! s:RunCodeLeaderAlternative()
     write
     let l:cmd = 'clear && date'
     if &filetype == 'python'
-        let l:cmd .= ' && time python %'
+        let l:cmd .= ' && time python3 %'
     elseif &filetype == 'javascript'
-        let l:cmd .= ' && node %'
+        let l:cmd .= ' &&  time node %'
     elseif &filetype == 'typescript'
         let l:cmd .= ' && npm run build'
     elseif &filetype == 'rust'
         let l:cmd .= ' && time cargo +nightly run --release'
     elseif &filetype == 'go'
         let l:cmd .= ' && time go run %'
+    elseif l:ft == 'fibo'
+        let l:cmd .= ' && time fibo %'
     elseif &filetype == 'haskell'
         let l:cmd .= ' && stack run'
     elseif &filetype == 'c'
@@ -275,6 +313,10 @@ function! s:RunCodeLeaderAlternative()
         let l:cmd .= ' && agda-cli run %'
     elseif &filetype == 'kind'
         let l:cmd .= ' && time kind run %'
+    elseif l:ft == 'hvml'
+        let l:cmd .= ' && time hvml run % -s -c'
+    elseif l:ft == 'ic'
+        let l:cmd .= ' && time ic %'
     else
         let l:cmd .= ' && time cc %'
     endif
