@@ -1,333 +1,405 @@
-if exists("g:loaded_run_code")
+" ============================================================================
+" File: run_code.vim
+" Description: Save and run code with 'r' (dev) and 'R' (optimized)
+" Version: 2.0
+" Author: Sergio Bonatto
+" License: MIT
+" ============================================================================
+
+if exists('g:loaded_run_code') || &compatible
     finish
 endif
 let g:loaded_run_code = 1
 
-function! s:RunCode()
-    write
-    let l:cmd = 'clear'
-    let l:ft = &filetype
+" Save current compatibility options
+let s:save_cpo = &cpo
+set cpo&vim
 
-    if has_key(g:run_code_commands, l:ft)
-        let l:cmd .= ' && ' . g:run_code_commands[l:ft]
-    elseif l:ft == 'agda'
-        let l:cmd .= ' && agda-cli check %'
-    elseif l:ft == 'bend'
-        let l:cmd .= ' && time bend check % && echo "all terms checked"'
-    elseif l:ft == 'caramel'
-        let l:cmd .= ' && time mel main'
-    elseif l:ft == 'c'
-        let l:cmd .= ' && clang % -o %:r && time ./%:r'
-    elseif l:ft == 'coc'
-        let l:cmd .= ' && time (coc type %:r; coc norm %:r)'
-    elseif l:ft == 'cpp'
-        let l:cmd .= ' && clang++ -std=c++11 -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'csharp'
-        let l:cmd .= ' && mcs % && mono %:r'
-    elseif l:ft == 'cuda'
-        let l:cmd .= ' && rm %:r; nvcc -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'dvl'
-        let l:cmd .= ' && dvl run %'
-    elseif l:ft == 'eac'
-        let l:cmd .= ' && time eac %:r'
-    elseif l:ft == 'eatt'
-        let l:cmd .= ' && time eatt %:r'
-    elseif l:ft == 'elm'
-        let l:cmd .= ' && clear && w! && elm % -r elm-runtime.js && osascript ~/.vim/refresh.applescript &'
-    elseif l:ft == 'formality'
-        let l:cmd .= ' && time fm %'
-    elseif l:ft == 'fibo'
-        let l:cmd .= ' && time fibo %'
-    elseif l:ft == 'formcore'
-        let l:cmd .= ' && time fmcjs %:r'
-    elseif l:ft == 'go'
-        let l:cmd .= ' && time go run %'
-    elseif l:ft == 'haskell'
-        let l:cmd .= ' && stack run'
-    elseif l:ft == 'html'
-        let l:cmd .= ' && npm run build'
-    elseif l:ft == 'hvm-lang'
-        let l:cmd .= ' && time hvm-lang  % '
-    elseif l:ft == 'hvm'
-        let l:cmd .= ' && time hvm run-c  %'
-    elseif l:ft == 'hvml'
-        let l:cmd .= ' && time hvml run % -s -c'
-    elseif l:ft == 'hvms'
-        let l:cmd .= ' && time hvms run %'
-    elseif l:ft == 'icvm'
-        let l:cmd .= ' && time ic % '
-    elseif l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif l:ft == 'idris2'
-        let l:cmd .= ' && idris2 % -o %:r && time ./%:r'
-    elseif l:ft == 'java'
-        let l:cmd .= ' && javac % && time java %:r'
-    elseif l:ft == 'javascript'
-        let l:cmd .= ' && time node %'
-    elseif l:ft == 'kind2'
-        let l:cmd .= ' && time kind2 check %'
-    elseif l:ft == 'kind'
-        let l:cmd .= ' && time kind check %'
-    elseif l:ft == 'ksc'
-        let l:cmd .= ' && time kindelia-cli local eval --file %'
-    elseif l:ft == 'lambda'
-        let l:cmd .= ' && time absal -s %'
-    elseif l:ft == 'ls'
-        let l:cmd .= ' && lsc -c % && node %:r.js'
-    elseif l:ft == 'lua'
-        let l:cmd .= ' && lua %'
-    elseif l:ft == 'moon'
-        let l:cmd .= ' && time moon run %:r'
-    elseif l:ft == 'morte'
-        let l:cmd .= ' && time echo $(cat %) | morte'
-    elseif l:ft == 'ocaml'
-        let l:cmd .= ' && ocamlc -o %:r % && ./%:r'
-    elseif l:ft == 'perl'
-        let l:cmd .= ' && perl %'
-    elseif l:ft == 'phi'
-        let l:cmd .= ' && time phi %'
-    elseif l:ft == 'php'
-        let l:cmd .= ' && php %'
-    elseif l:ft == 'purescript'
-        let l:cmd .= ' && pulp run '
-    elseif l:ft == 'python'
-        let l:cmd .= ' && time python3 %'
-    elseif l:ft == 'racket'
-        let l:cmd .= ' && racket %'
-    elseif l:ft == 'ruby'
-        let l:cmd .= ' && ruby %'
-    elseif l:ft == 'rust'
-        let l:cmd .= ' && time cargo +nightly run --release'
-    elseif l:ft == 'scheme'
-        let l:cmd .= ' && csc % && time ./%:r'
-    elseif l:ft == 'sic'
-        let l:cmd .= ' && time sic -s -B %'
-    elseif l:ft == 'solidity'
-        let l:cmd .= ' && truffle deploy'
-    elseif l:ft == 'swift'
-        let l:cmd .= ' && time swift %'
-    elseif l:ft == 'test.js'
-        let l:cmd .= ' && mocha'
-    elseif l:ft == 'typescript'
-        let l:cmd .= ' && npm run build'
-    elseif l:ft == 'sh'
-        let l:cmd .= ' && bash %'
-    else
-        let l:cmd .= ' && time cc %'
+" ============================================================================
+" Configuration Variables
+" ============================================================================
+
+" Enable/disable automatic file saving before execution
+let g:run_code_auto_save = get(g:, 'run_code_auto_save', 1)
+
+" Enable/disable terminal clearing before execution
+let g:run_code_clear_terminal = get(g:, 'run_code_clear_terminal', 1)
+
+" Enable/disable default key mappings
+let g:run_code_no_default_mappings = get(g:, 'run_code_no_default_mappings', 0)
+
+" Enable/disable execution feedback messages
+let g:run_code_show_feedback = get(g:, 'run_code_show_feedback', 1)
+
+" Timeout for command execution (in seconds, 0 = no timeout)
+let g:run_code_timeout = get(g:, 'run_code_timeout', 0)
+
+" Directory for temporary files
+let g:run_code_temp_dir = get(g:, 'run_code_temp_dir', '/tmp')
+
+" ============================================================================
+" Development Commands (Standard execution)
+" ============================================================================
+
+let s:run_commands_dev = {
+    \ 'agda': 'agda-cli check %',
+    \ 'bend': 'bend run %',
+    \ 'c': 'clang % -o %:r && ./%:r',
+    \ 'caramel': 'mel main',
+    \ 'coc': 'coc type %:r && coc norm %:r',
+    \ 'cpp': 'clang++ -std=c++17 % -o %:r && ./%:r',
+    \ 'csharp': 'mcs % && mono %:r.exe',
+    \ 'cuda': 'nvcc % -o %:r && ./%:r',
+    \ 'dart': 'dart %',
+    \ 'dvl': 'dvl run %',
+    \ 'eac': 'eac %:r',
+    \ 'eatt': 'eatt %:r',
+    \ 'elm': 'elm make % --output=%:r.js',
+    \ 'erlang': 'escript %',
+    \ 'fibo': 'fibo %',
+    \ 'formality': 'fm %',
+    \ 'formcore': 'fmcjs %:r',
+    \ 'go': 'go run %',
+    \ 'haskell': 'stack run',
+    \ 'html': 'npm run dev',
+    \ 'hvm': 'hvm run %',
+    \ 'hvm-lang': 'hvm-lang %',
+    \ 'hvml': 'hvml run % -s',
+    \ 'hvms': 'hvms run %',
+    \ 'ic': 'ic %',
+    \ 'icvm': 'ic %',
+    \ 'idris2': 'idris2 % -o %:r && ./%:r',
+    \ 'java': 'javac % && java %:r',
+    \ 'javascript': 'bun run %',
+    \ 'jsx': 'npm run dev',
+    \ 'julia': 'julia %',
+    \ 'kind': 'kind check %',
+    \ 'kind2': 'kind2 check %',
+    \ 'kotlin': 'kotlinc % -include-runtime -d %:r.jar && java -jar %:r.jar',
+    \ 'ksc': 'kindelia-cli local eval --file %',
+    \ 'lambda': 'absal -s %',
+    \ 'livescript': 'lsc -c % && node %:r.js',
+    \ 'lua': 'lua %',
+    \ 'moon': 'moon run %:r',
+    \ 'morte': 'echo $(cat %) | morte',
+    \ 'nim': 'nim compile --run %',
+    \ 'ocaml': 'ocamlc -o %:r % && ./%:r',
+    \ 'pascal': 'fpc % && ./%:r',
+    \ 'perl': 'perl -w %',
+    \ 'phi': 'phi %',
+    \ 'php': 'php %',
+    \ 'purescript': 'pulp run',
+    \ 'python': 'python3 -u %',
+    \ 'r': 'Rscript %',
+    \ 'racket': 'racket %',
+    \ 'ruby': 'ruby %',
+    \ 'rust': 'cargo run',
+    \ 'scala': 'scala %',
+    \ 'scheme': 'csc % && ./%:r',
+    \ 'sh': 'bash -x %',
+    \ 'sic': 'sic -s -B %',
+    \ 'solidity': 'truffle deploy',
+    \ 'swift': 'swift %',
+    \ 'typescript': 'bun run %',
+    \ 'tsx': 'npm run dev',
+    \ 'zig': 'zig run %'
+\ }
+
+" ============================================================================
+" Optimized Commands (Production/Fast execution)
+" ============================================================================
+
+let s:run_commands_opt = {
+    \ 'agda': 'agda-cli run %',
+    \ 'bend': 'bend run %',
+    \ 'c': 'clang -O3 -march=native % -o %:r && ./%:r',
+    \ 'cpp': 'clang++ -O3 -march=native -std=c++20 % -o %:r && ./%:r',
+    \ 'cuda': 'nvcc -O3 % -o %:r && ./%:r',
+    \ 'dart': 'dart compile exe % -o %:r && ./%:r',
+    \ 'go': 'go build -ldflags="-s -w" % && ./%:r',
+    \ 'haskell': 'ghc -O2 -threaded % -o ' . g:run_code_temp_dir . '/.tmp_exec && ' . g:run_code_temp_dir . '/.tmp_exec && rm -f ' . g:run_code_temp_dir . '/.tmp_exec %:r.hi %:r.o',
+    \ 'html': 'python3 -m http.server 8000',
+    \ 'hvm': 'hvm run-c %',
+    \ 'java': 'javac % && java -server -XX:+UseG1GC %:r',
+    \ 'javascript': 'node %',
+    \ 'julia': 'julia -O3 %',
+    \ 'kind': 'kind run %',
+    \ 'kind2': 'kind2 normal %',
+    \ 'kotlin': 'kotlinc % -include-runtime -d %:r.jar && java -server -jar %:r.jar',
+    \ 'nim': 'nim compile --opt:speed --run %',
+    \ 'ocaml': 'ocamlopt -O3 -o %:r % && ./%:r',
+    \ 'pascal': 'fpc -O3 % && ./%:r',
+    \ 'phi': 'phi % -t -s -c',
+    \ 'python': 'python3 -O %',
+    \ 'rust': 'cargo run --release',
+    \ 'scala': 'scalac % && scala -J-server %:r',
+    \ 'typescript': 'tsc % --outDir ' . g:run_code_temp_dir . ' && node ' . g:run_code_temp_dir . '/%:r.js',
+    \ 'zig': 'zig run -O ReleaseFast %'
+\ }
+
+" ============================================================================
+" Utility Functions
+" ============================================================================
+
+" Check if a command/executable exists in PATH
+function! s:CommandExists(cmd) abort
+    return executable(split(a:cmd, '\s\+')[0])
+endfunction
+
+" Get the base command without arguments for existence check
+function! s:GetBaseCommand(cmd) abort
+    return split(substitute(a:cmd, '%\|%:[a-z]\+', '', 'g'), '\s\+')[0]
+endfunction
+
+" Display feedback message with highlighting
+function! s:ShowFeedback(msg, type) abort
+    if !g:run_code_show_feedback
+        return
     endif
 
-    execute '!' . l:cmd
-endfunction
-
-function! s:RunCodeAlternative()
-    write
-    let l:cmd = 'clear && date'
-    let l:ft = &filetype
-
-    if l:ft == 'agda'
-        let l:cmd .= ' && agda-cli check %'
-    elseif l:ft == 'caramel'
-        let l:cmd .= ' && time mel main'
-    elseif l:ft == 'ocaml'
-        let l:cmd .= ' && ocamlc -o %:r % && ./%:r'
-    elseif l:ft == 'factor'
-        let l:cmd .= ' && ~/factor/factor %'
-    elseif l:ft == 'python'
-        let l:cmd .= ' && time python3 %'
-    elseif l:ft == 'coc'
-        let l:cmd .= ' && time (coc type %:r; coc norm %:r)'
-    elseif l:ft == 'scheme'
-        let l:cmd .= ' && csc % && time ./%:r'
-    elseif l:ft == 'elm'
-        let l:cmd .= ' && elm % -r elm-runtime.js && osascript ~/.vim/refresh.applescript &'
-    elseif l:ft == 'racket'
-        let l:cmd .= ' && racket %'
-    elseif l:ft == 'haskell'
-        let l:cmd .= ' && time ghc -O2 % -o .tmp && time ./.tmp 0 && rm %:r.hi %:r.o .tmp'
-    elseif l:ft == 'rust'
-        let l:cmd .= ' && time cargo run --release'
-    elseif l:ft == 'go'
-        let l:cmd .= ' && time go run %'
-    elseif l:ft == 'purescript'
-        let l:cmd .= ' && pulp run'
-    elseif l:ft == 'dvl'
-        let l:cmd .= ' && dvl run %'
-    elseif l:ft == 'lambda'
-        let l:cmd .= ' && time absal -s %'
-    elseif l:ft == 'javascript'
-        let l:cmd .= '&& time node %'
-    elseif l:ft == 'icvm'
-        let l:cmd .= ' && time ic % '
-    elseif l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif l:ft == 'typescript'
-        let l:cmd .= ' && time deno --unstable run --reload --allow-all %'
-    elseif l:ft == 'html'
-        let l:cmd .= ' && http-server -c-1'
-    elseif l:ft == "hvml"
-        let l:cmd .= ' && time hvml run % -s -c'
-    elseif l:ft == 'eatt'
-        let l:cmd .= ' && time eatt %:r'
-    elseif l:ft == 'fmfm' || l:ft == 'formality'
-        let l:cmd .= ' && time fmjs %:r --run'
-    elseif l:ft == 'fibo'
-        let l:cmd .= ' && time fibo %'
-    elseif l:ft == 'phi'
-        let l:cmd .= ' && time phi % -s -c'
-    elseif &filetype == 'jsx'
-        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
-
-    elseif &filetype == 'tsx'
-        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
-
-    elseif &filetype == 'ts'
-        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && npm run dev'
-
-    elseif l:ft == 'kind2'
-        let l:cmd .= ' && time kind2 normal %'
-    elseif &filetype == 'kind'
-        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-        let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
-        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind check ' . shellescape(l:relative_path)
-    elseif l:ft == 'lambolt'
-        let l:cmd .= ' && time lam % c'
-    elseif l:ft == 'bend'
-        let l:cmd .= ' && time bend run-c % -s'
-    elseif l:ft == 'hvm2'
-        let l:cmd .= ' && hvm c %; clang -O2 %:r.c -o %:r; time ./%:r 2; rm %:r %:r.c'
-    elseif l:ft == 'hvm-lang'
-        let l:cmd .= ' && time hvm-lang run %'
-    elseif l:ft == 'hvm'
-        let l:cmd .= ' && time hvm run %'
-    elseif l:ft == 'hvml'
-        let l:cmd .= ' && time hvml run % -S -s -c'
-    elseif l:ft == 'icvm' || l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif l:ft == 'ksc'
-        let l:cmd .= ' && time kindelia-cli local check --file %'
-    elseif l:ft == 'eac'
-        let l:cmd .= ' && time eac %:r'
-    elseif l:ft == 'formcore'
-        let l:cmd .= ' && time fmio %:r'
-    elseif l:ft == 'moon'
-        let l:cmd .= ' && time moon run %:r'
-    elseif l:ft == 'sic'
-        let l:cmd .= ' && time sic -s -B %'
-    elseif l:ft == 'morte'
-        let l:cmd .= ' && time echo $(cat %) | morte'
-    elseif l:ft == 'swift'
-        let l:cmd .= ' && time swift %'
-    elseif l:ft == 'solidity'
-        let l:cmd .= ' && truffle deploy'
-    elseif l:ft == 'idris2'
-        let l:cmd .= ' && idris2 % -o %:r && time ./build/exec/%:r'
-    elseif l:ft == 'c'
-        let l:cmd .= ' && clang -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'cpp'
-        let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
-    elseif l:ft == 'agda'
-        let l:cmd .= ' && agda-cli run %'
-    elseif l:ft == 'ls'
-        let l:cmd .= ' && lsc -c % && node %:r.js'
-    else
-        let l:cmd .= ' && time cc %'
+    if a:type ==# 'error'
+        echohl ErrorMsg
+    elseif a:type ==# 'warning'
+        echohl WarningMsg
+    elseif a:type ==# 'info'
+        echohl MoreMsg
     endif
 
-    execute '!' . l:cmd
+    echo a:msg
+    echohl None
 endfunction
 
-" Exposição da função para uso global
-function! RunCodeAlternative()
-    call s:RunCodeAlternative()
+" Validate file before execution
+function! s:ValidateFile() abort
+    " Check if file exists and is readable
+    if !filereadable(expand('%'))
+        call s:ShowFeedback('Error: File is not readable or does not exist', 'error')
+        return 0
+    endif
+
+    " Check if file has been modified
+    if &modified && g:run_code_auto_save
+        call s:ShowFeedback('Saving file before execution...', 'info')
+    elseif &modified && !g:run_code_auto_save
+        call s:ShowFeedback('Warning: File has unsaved changes', 'warning')
+    endif
+
+    return 1
 endfunction
 
-" Mapeamento padrão (opcional)
-if get(g:, 'run_code_map_keys', 1)
-    nnoremap <silent> R :call RunCodeAlternative()<CR>
+" Get command for current filetype
+function! s:GetCommand(is_optimized) abort
+    let l:ft = &filetype
+    let l:commands = a:is_optimized ? s:run_commands_opt : s:run_commands_dev
+
+    " Check for user-defined custom commands first
+    if exists('g:run_code_commands') && has_key(g:run_code_commands, l:ft)
+        return g:run_code_commands[l:ft]
+    endif
+
+    " Check language-specific commands
+    if has_key(l:commands, l:ft)
+        return l:commands[l:ft]
+    endif
+
+    " Try alternative command set if optimized command not found
+    if a:is_optimized && has_key(s:run_commands_dev, l:ft)
+        call s:ShowFeedback('No optimized command found, using development command', 'warning')
+        return s:run_commands_dev[l:ft]
+    endif
+
+    " Fallback to generic C compiler
+    call s:ShowFeedback('No specific command found for ' . l:ft . ', using C compiler fallback', 'warning')
+    return 'cc % -o %:r && ./%:r'
+endfunction
+
+" Build the full command with options
+function! s:BuildCommand(base_cmd) abort
+    let l:cmd = ''
+
+    " Add clear command if enabled
+    if g:run_code_clear_terminal
+        let l:cmd = 'clear'
+    endif
+
+    " Add timeout if specified
+    if g:run_code_timeout > 0
+        let l:timeout_cmd = 'time && timeout ' . g:run_code_timeout . 's ' . a:base_cmd
+        let l:cmd = l:cmd ==# '' ? l:timeout_cmd : l:cmd . ' && ' . l:timeout_cmd
+    else
+        let l:cmd = l:cmd ==# '' ? 'time ' . a:base_cmd : l:cmd . ' && time ' . a:base_cmd
+    endif
+
+    return l:cmd
+endfunction
+
+" ============================================================================
+" Core Execution Functions
+" ============================================================================
+
+" Execute code in development mode
+function! s:RunCodeDev() abort
+    if !s:ValidateFile()
+        return
+    endif
+
+    " Auto-save if enabled
+    if g:run_code_auto_save
+        try
+            write
+        catch /^Vim\%((\a\+)\)\=:E/
+            call s:ShowFeedback('Error: Cannot save file - ' . v:exception, 'error')
+            return
+        endtry
+    endif
+
+    let l:base_cmd = s:GetCommand(0)
+
+    " Check if the required command exists
+    if !s:CommandExists(l:base_cmd)
+        call s:ShowFeedback('Error: Command not found - ' . s:GetBaseCommand(l:base_cmd), 'error')
+        return
+    endif
+
+    let l:full_cmd = s:BuildCommand(l:base_cmd)
+
+    call s:ShowFeedback('Running in development mode...', 'info')
+    execute '!' . l:full_cmd
+endfunction
+
+" Execute code in optimized mode
+function! s:RunCodeOpt() abort
+    if !s:ValidateFile()
+        return
+    endif
+
+    " Auto-save if enabled
+    if g:run_code_auto_save
+        try
+            write
+        catch /^Vim\%((\a\+)\)\=:E/
+            call s:ShowFeedback('Error: Cannot save file - ' . v:exception, 'error')
+            return
+        endtry
+    endif
+
+    let l:base_cmd = s:GetCommand(1)
+
+    " Check if the required command exists
+    if !s:CommandExists(l:base_cmd)
+        call s:ShowFeedback('Error: Command not found - ' . s:GetBaseCommand(l:base_cmd), 'error')
+        return
+    endif
+
+    let l:full_cmd = s:BuildCommand(l:base_cmd)
+
+    call s:ShowFeedback('Running in optimized mode...', 'info')
+    execute '!' . l:full_cmd
+endfunction
+
+" ============================================================================
+" Public API for Customization
+" ============================================================================
+
+" Set custom command for a filetype
+function! RunCodeSetCommand(filetype, command) abort
+    if empty(a:filetype) || empty(a:command)
+        call s:ShowFeedback('Error: Both filetype and command must be non-empty', 'error')
+        return
+    endif
+
+    if !exists('g:run_code_commands')
+        let g:run_code_commands = {}
+    endif
+
+    let g:run_code_commands[a:filetype] = a:command
+    call s:ShowFeedback('Custom command set for ' . a:filetype, 'info')
+endfunction
+
+" Get current command for filetype
+function! RunCodeGetCommand(filetype, ...) abort
+    let l:is_optimized = a:0 > 0 ? a:1 : 0
+    let l:old_ft = &filetype
+
+    try
+        let &filetype = a:filetype
+        return s:GetCommand(l:is_optimized)
+    finally
+        let &filetype = l:old_ft
+    endtry
+endfunction
+
+" List all supported languages
+function! RunCodeListLanguages() abort
+    let l:all_languages = extend(copy(s:run_commands_dev), s:run_commands_opt)
+    let l:languages = sort(keys(l:all_languages))
+
+    echo 'Supported languages:'
+    for l:lang in l:languages
+        echo '  ' . l:lang
+    endfor
+endfunction
+
+" Show current configuration
+function! RunCodeShowConfig() abort
+    echo 'Run Code Configuration:'
+    echo '  Auto-save: ' . (g:run_code_auto_save ? 'enabled' : 'disabled')
+    echo '  Clear terminal: ' . (g:run_code_clear_terminal ? 'enabled' : 'disabled')
+    echo '  Show feedback: ' . (g:run_code_show_feedback ? 'enabled' : 'disabled')
+    echo '  Timeout: ' . (g:run_code_timeout > 0 ? g:run_code_timeout . 's' : 'disabled')
+    echo '  Temp directory: ' . g:run_code_temp_dir
+    echo '  Default mappings: ' . (g:run_code_no_default_mappings ? 'disabled' : 'enabled')
+endfunction
+
+" ============================================================================
+" Key Mappings
+" ============================================================================
+
+if !g:run_code_no_default_mappings
+    " Map 'r' to run code in development mode
+    nnoremap <silent> r :call <SID>RunCodeDev()<CR>
+
+    " Map 'R' to run code in optimized mode
+    nnoremap <silent> R :call <SID>RunCodeOpt()<CR>
 endif
 
-function! s:RunCodeLeader()
-    write
-    let l:cmd = 'clear && date'
-    if &filetype == 'python'
-        let l:cmd .= ' && time python3 %'
-    elseif &filetype == 'javascript'
-        let l:cmd .= ' && npm run build'
-    elseif &filetype == 'typescript'
-        let l:cmd .= ' && npm run build'
-    elseif &filetype == 'rust'
-        let l:cmd .= ' && time cargo +nightly run --release'
-    elseif &filetype == 'go'
-        let l:cmd .= ' && time go run %'
-    elseif &filetype == 'haskell'
-        let l:cmd .= ' && stack run'
-    elseif &filetype == 'c'
-        let l:cmd .= ' && clang -O3 -Wall % -o %:r && time ./%:r'
-    elseif l:ft == 'fibo'
-        let l:cmd .= ' && time fibo %'
-    elseif &filetype == 'cpp'
-        let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
-    elseif &filetype == 'agda'
-        let l:cmd .= ' && agda-cli run %'
-    elseif l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    elseif &filetype == 'kind'
-        let l:repo_root = fnamemodify(finddir('.git/..', expand('%:p:h').';'), ':p')
-        let l:relative_path = fnamemodify(expand('%:p'), ':s?' . l:repo_root . '??')
-        let l:cmd .= ' && cd ' . shellescape(l:repo_root) . ' && time kind run ' . shellescape(l:relative_path)
-    elseif l:ft == 'hvml'
-        let l:cmd .= ' && time hvml run % -s -c'
-    else
-        let l:cmd .= ' && time cc %'
-    endif
-    execute '!' . l:cmd
-endfunction
+" ============================================================================
+" Commands
+" ============================================================================
 
-function! s:RunCodeLeaderAlternative()
-    write
-    let l:cmd = 'clear && date'
-    if &filetype == 'python'
-        let l:cmd .= ' && time python3 %'
-    elseif &filetype == 'javascript'
-        let l:cmd .= ' &&  time node %'
-    elseif &filetype == 'typescript'
-        let l:cmd .= ' && npm run build'
-    elseif &filetype == 'rust'
-        let l:cmd .= ' && time cargo +nightly run --release'
-    elseif &filetype == 'go'
-        let l:cmd .= ' && time go run %'
-    elseif l:ft == 'fibo'
-        let l:cmd .= ' && time fibo %'
-    elseif &filetype == 'haskell'
-        let l:cmd .= ' && stack run'
-    elseif &filetype == 'c'
-        let l:cmd .= ' && clang -O3 % -o %:r && time ./%:r'
-    elseif &filetype == 'cpp'
-        let l:cmd .= ' && clang++ -O3 % -o %:r && time ./%:r'
-    elseif &filetype == 'agda'
-        let l:cmd .= ' && agda-cli run %'
-    elseif &filetype == 'kind'
-        let l:cmd .= ' && time kind run %'
-    elseif l:ft == 'hvml'
-        let l:cmd .= ' && time hvml run % -s -c'
-    elseif l:ft == 'ic'
-        let l:cmd .= ' && time ic %'
-    else
-        let l:cmd .= ' && time cc %'
-    endif
-    execute '!' . l:cmd
-endfunction
+" Set custom command for a filetype
+" Usage: :RunCodeSet python "python3 -u %"
+command! -nargs=+ RunCodeSet call RunCodeSetCommand(<f-args>)
 
-function! SetRunCommand(filetype, command)
-    let g:run_code_commands[a:filetype] = a:command
-endfunction
+" Get command for current or specified filetype
+" Usage: :RunCodeGet [filetype] [optimized]
+command! -nargs=* RunCodeGet echo RunCodeGetCommand(<f-args>)
 
-nnoremap <silent> r :call <SID>RunCodeAlternative()<CR>
-nnoremap <silent> R :call <SID>RunCodeLeader()<CR>
-nnoremap <silent> <leader>r :call <SID>RunCodeAlternative()<CR>
-nnoremap <silent> <leader>R :call <SID>RunCodeLeaderAlternative()<CR>
+" List all supported languages
+command! RunCodeList call RunCodeListLanguages()
+
+" Show current configuration
+command! RunCodeConfig call RunCodeShowConfig()
+
+" Manual execution commands
+command! RunCodeDev call <SID>RunCodeDev()
+command! RunCodeOpt call <SID>RunCodeOpt()
+
+" ============================================================================
+" Autocommands
+" ============================================================================
+
+augroup RunCodeGroup
+    autocmd!
+    " Add any future autocommands here
+augroup END
+
+" ============================================================================
+" Cleanup
+" ============================================================================
+
+" Restore compatibility options
+let &cpo = s:save_cpo
+unlet s:save_cpo
+
+" vim: set et sw=4 ts=4 sts=4:
